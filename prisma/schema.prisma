@@ -35,16 +35,17 @@ model Reward {
 }
 
 model UserReward {
-    id             Int        @default(autoincrement()) @id
-  userId         Int
-  rewardId       Int
+  id Int @default(autoincrement()) @id
+  userId Int
+  rewardId Int
   claimStartDate DateTime?
-  claimEndDate   DateTime?
-  state          Int       @default(0) // 0: locked, 1: active, 2: claimed
-  claimedAt      DateTime?
+  claimEndDate DateTime?
+  state Int @default(0) // 0: locked, 1: active, 2: claimed
+  claimedAt DateTime?
+  isCurrentWeek Boolean @default(true)
 
   user   User   @relation(fields: [userId], references: [id])
   reward Reward @relation(fields: [rewardId], references: [id])
 
-  @@unique([userId, rewardId])
+  // @@unique([userId, rewardId])
 }
