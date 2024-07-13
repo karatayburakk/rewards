@@ -1,8 +1,9 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { UserRewardsService } from './user-rewards.service';
 import { User } from '../../common/decoratos/get-user.decorator';
 import { JwtGuard } from '../../common/guards/jwt.guard';
-import { UserRewards } from './dtos/user-rewards.dto';
+import { UserRewardsDto } from './dtos/user-rewards.dto';
+import { CollectRewardDto } from './dtos/collect-reward.dto';
 
 @UseGuards(JwtGuard)
 @Controller('user-rewards')
@@ -10,7 +11,20 @@ export class UserRewardsController {
   constructor(private readonly userRewardsService: UserRewardsService) {}
 
   @Get('days')
-  getAllUserRewards(@User('id') userId: number): Promise<UserRewards[]> {
+  getAllUserRewards(@User('id') userId: number): Promise<UserRewardsDto[]> {
     return this.userRewardsService.getAllUserRewards(userId);
+  }
+
+  @Post('collect')
+  collectReward(
+    @User('id') userId: number,
+    @Body() collectRewardDto: CollectRewardDto,
+  ): Promise<{ status: string; message: string }> {
+    return this.userRewardsService.collectReward(userId, collectRewardDto);
+  }
+
+  @Get('history')
+  getUserRewardsHistory(@User('id') userId: number): Promise<UserRewardsDto[]> {
+    return this.userRewardsService.getUserRewardsHistory(userId);
   }
 }
