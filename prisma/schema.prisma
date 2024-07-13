@@ -46,6 +46,4 @@ model UserReward {
 
   user   User   @relation(fields: [userId], references: [id])
   reward Reward @relation(fields: [rewardId], references: [id])
-
-  // @@unique([userId, rewardId])
 }
