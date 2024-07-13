@@ -21,4 +21,30 @@ model User {
   email String @unique
   password String
   timeZone String
+
+  userRewards UserReward[]
+}
+
+model Reward {
+  id Int @default(autoincrement()) @id
+  dayNumber Int
+  coin Int
+  description String?
+
+  userRewards UserReward[]
+}
+
+model UserReward {
+    id             Int        @default(autoincrement()) @id
+  userId         Int
+  rewardId       Int
+  claimStartDate DateTime?
+  claimEndDate   DateTime?
+  state          Int       @default(0) // 0: locked, 1: active, 2: claimed
+  claimedAt      DateTime?
+
+  user   User   @relation(fields: [userId], references: [id])
+  reward Reward @relation(fields: [rewardId], references: [id])
+
+  @@unique([userId, rewardId])
 }

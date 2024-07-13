@@ -5,6 +5,10 @@ import { compare, genSalt, hash } from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { SigninDto } from './dtos/signin.dto';
+import { RewardsRepository } from '../rewards/rewards.repository';
+import * as moment from 'moment-timezone';
+import { User } from '@prisma/client';
+import { UserRewardsRepository } from '../user-rewards/user-rewards.repository';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +16,8 @@ export class AuthService {
     private readonly usersRepository: UsersRepository,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly rewardsRepository: RewardsRepository,
+    private readonly usersRewardsRepository: UserRewardsRepository,
   ) {}
 
   async signup(signupDto: SignupDto): Promise<{ accessToken: string }> {
@@ -22,6 +28,8 @@ export class AuthService {
       timeZone: signupDto.timeZone,
       password: hashPassword,
     });
+
+    await this.assignUserRewards(user);
 
     const accessToken = await this.generateToken(user.id, user.email);
     return { accessToken };
@@ -50,5 +58,45 @@ export class AuthService {
       secret: this.config.get<string>('SECRET_KEY'),
     });
     return accessToken;
+  }
+
+  private async assignUserRewards(user: User): Promise<void> {
+    const rewards = await this.rewardsRepository.getAllRewards();
+
+    console.log(rewards);
+
+    // Convert user's registration time to their local time zone
+    let previousClaimStartDate = moment.tz(user.createdAt, user.timeZone);
+
+    const userRewards = rewards.map((reward) => {
+      let claimStartDate: Date, claimEndDate: Date;
+
+      if (reward.dayNumber === 1) {
+        claimStartDate = previousClaimStartDate.toDate();
+        claimEndDate = null;
+      } else {
+        claimStartDate = previousClaimStartDate
+          .add(1, 'days')
+          .startOf('day')
+          .toDate();
+        claimEndDate = moment
+          .tz(claimStartDate, user.timeZone)
+          .endOf('day')
+          .toDate();
+      }
+
+      // Update previousClaimStartDate for the next iteration
+      previousClaimStartDate = moment.tz(claimStartDate, user.timeZone);
+
+      return {
+        userId: user.id,
+        rewardId: reward.id,
+        claimStartDate: claimStartDate,
+        claimEndDate: claimEndDate,
+        state: reward.dayNumber === 1 ? 1 : 0, // First day active, rest locked
+      };
+    });
+
+    await this.usersRewardsRepository.createUserRewards(userRewards);
   }
 }
