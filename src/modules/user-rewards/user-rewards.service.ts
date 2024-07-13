@@ -5,6 +5,7 @@ import { UserRewardsDto } from './dtos/user-rewards.dto';
 import { CollectRewardDto } from './dtos/collect-reward.dto';
 import { RewardsRepository } from '../rewards/rewards.repository';
 import { State } from './dtos/create-user-rewards-dto';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class UserRewardsService {
@@ -13,9 +14,9 @@ export class UserRewardsService {
     private readonly rewardsRepository: RewardsRepository,
   ) {}
 
-  async getAllUserRewards(userId: number): Promise<UserRewardsDto[]> {
+  async getUserWeeklyRewards(userId: number): Promise<UserRewardsDto[]> {
     const userRewards =
-      await this.userRewardsRepository.getAllUserRewards(userId);
+      await this.userRewardsRepository.getUserWeeklyRewards(userId);
 
     return userRewards.map((userReward) => ({
       dayNumber: userReward.reward.dayNumber,
@@ -31,38 +32,58 @@ export class UserRewardsService {
       claimedAt: userReward.claimedAt
         ? moment(userReward.claimedAt).format('YYYY-MM-DD HH:mm:ss')
         : null,
+      isCurrentWeek: userReward.isCurrentWeek,
     }));
   }
 
-  async collectReward(
-    userId: number,
-    collectRewardDto: CollectRewardDto,
-  ): Promise<{ status: string; message: string }> {
+  async collectReward(user: User, collectRewardDto: CollectRewardDto) {
     const { dayIndex } = collectRewardDto;
 
-    const userReward = await this.userRewardsRepository.getUserRewardByDayIndex(
-      userId,
-      dayIndex,
+    const userRewards = await this.userRewardsRepository.getUserWeeklyRewards(
+      user.id,
+    );
+    const currentReward = userRewards.find(
+      (reward) => reward.state === State.Active,
+    );
+    const requestedReward = userRewards.find(
+      (reward) => reward.reward.dayNumber === dayIndex,
     );
 
-    if (!userReward) {
+    if (!requestedReward) {
       throw new BadRequestException('Invalid reward day index');
     }
 
-    if (userReward.state === State.Claimed) {
+    const currentUtcTime = moment.utc().toDate();
+
+    // Check if the current active reward's time has expired
+    if (
+      // requestedReward === currentReward &&
+      currentReward &&
+      currentReward.claimEndDate &&
+      currentUtcTime > currentReward.claimEndDate
+    ) {
+      // User missed claiming the current reward, start a new cycle without giving the first day's reward
+      await this.createNewCycleRewards(user, currentUtcTime);
+
+      return {
+        status: 'error',
+        message:
+          'Bu ödül için geçerli süre sona ermiştir, yeni bir döngü başlatıldı.',
+      };
+    }
+
+    if (requestedReward.state === State.Claimed) {
       return {
         status: 'error',
         message: 'Bugün için ödül zaten toplandı.',
       };
     }
 
-    const currentUtcTime = moment.utc().toDate();
-    console.log(userReward);
-    console.log(currentUtcTime);
     if (
-      userReward.state !== 1 ||
-      currentUtcTime < userReward.claimStartDate ||
-      (userReward.claimEndDate && currentUtcTime > userReward.claimEndDate)
+      requestedReward.state !== State.Active ||
+      currentUtcTime < currentReward.claimStartDate ||
+      (currentReward.claimEndDate &&
+        currentUtcTime > currentReward.claimEndDate)
     ) {
       return {
         status: 'error',
@@ -70,28 +91,27 @@ export class UserRewardsService {
       };
     }
 
-    await this.userRewardsRepository.updateUserReward(userReward.id, {
+    await this.userRewardsRepository.updateUserReward(requestedReward.id, {
       state: State.Claimed, // Claimed
       claimedAt: currentUtcTime,
     });
 
     const nextDayIndex = (dayIndex % 7) + 1;
     const nextReward = await this.userRewardsRepository.getUserRewardByDayIndex(
-      userId,
+      user.id,
       nextDayIndex,
     );
 
-    if (nextReward) {
-      if (nextDayIndex === 1) {
-        // Start a new cycle
-        await this.createNewCycleRewards(userId, currentUtcTime);
-      } else {
-        // Update the next day's reward state without changing dates
-        await this.userRewardsRepository.updateUserReward(nextReward.id, {
-          state: State.Active, // Active
-        });
-      }
+    if (nextDayIndex === 1) {
+      // Start a new cycle
+      await this.createNewCycleRewards(user, currentUtcTime);
+    } else if (nextReward) {
+      // Update the next day's reward state without changing dates
+      await this.userRewardsRepository.updateUserReward(nextReward.id, {
+        state: State.Active, // Active
+      });
     }
+
     return {
       status: 'success',
       message: 'Ödül başarıyla toplandı.',
@@ -116,32 +136,44 @@ export class UserRewardsService {
       claimedAt: userReward.claimedAt
         ? moment(userReward.claimedAt).format('YYYY-MM-DD HH:mm:ss')
         : null,
+      isCurrentWeek: userReward.isCurrentWeek,
     }));
   }
 
-  private async createNewCycleRewards(userId: number, startDate: Date) {
+  private async createNewCycleRewards(user: User, startDate: Date) {
+    await this.userRewardsRepository.resetCurrentWeekRewards(user.id);
+
     const rewards = await this.rewardsRepository.getAllRewards();
+
+    let previousClaimStartDate = moment.tz(startDate, user.timeZone);
 
     const newCycleRewards = rewards.map((reward) => {
       let claimStartDate: Date, claimEndDate: Date;
 
       if (reward.dayNumber === 1) {
-        claimStartDate = moment(startDate).toDate();
+        claimStartDate = previousClaimStartDate.toDate();
         claimEndDate = null;
       } else {
-        claimStartDate = moment(startDate)
-          .add(reward.dayNumber - 1, 'days')
+        claimStartDate = previousClaimStartDate
+          .add(1, 'days')
           .startOf('day')
           .toDate();
-        claimEndDate = moment(claimStartDate).endOf('day').toDate();
+        claimEndDate = moment
+          .tz(claimStartDate, user.timeZone)
+          .endOf('day')
+          .toDate();
       }
 
+      // Update previousClaimStartDate for the next iteration
+      previousClaimStartDate = moment.tz(claimStartDate, user.timeZone);
+
       return {
-        userId: userId,
+        userId: user.id,
         rewardId: reward.id,
         claimStartDate: claimStartDate,
         claimEndDate: claimEndDate,
-        state: reward.dayNumber === State.Active ? State.Active : State.Locked, // First day active, rest locked
+        state: reward.dayNumber === 1 ? State.Active : State.Locked, // First day active, rest locked
+        isCurrentWeek: true,
       };
     });
 

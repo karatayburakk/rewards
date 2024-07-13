@@ -9,6 +9,7 @@ import { RewardsRepository } from '../rewards/rewards.repository';
 import * as moment from 'moment-timezone';
 import { User } from '@prisma/client';
 import { UserRewardsRepository } from '../user-rewards/user-rewards.repository';
+import { State } from '../user-rewards/dtos/create-user-rewards-dto';
 
 @Injectable()
 export class AuthService {
@@ -41,6 +42,16 @@ export class AuthService {
     const isMatched = await compare(signinDto.password, user.password);
     if (!isMatched) throw new UnauthorizedException('Credentials are wrong');
 
+    const currentUtcTime = moment.utc().toDate();
+
+    const { claimEndDate } =
+      await this.usersRewardsRepository.getCurrentRewardEndTime(user.id);
+
+    if (claimEndDate && currentUtcTime > claimEndDate) {
+      await this.usersRewardsRepository.resetCurrentWeekRewards(user.id);
+      await this.assignUserRewards(user, currentUtcTime);
+    }
+
     const accessToken = await this.generateToken(user.id, user.email);
     return { accessToken };
   }
@@ -60,13 +71,17 @@ export class AuthService {
     return accessToken;
   }
 
-  private async assignUserRewards(user: User): Promise<void> {
+  private async assignUserRewards(
+    user: User,
+    currentTime?: Date,
+  ): Promise<void> {
     const rewards = await this.rewardsRepository.getAllRewards();
 
-    console.log(rewards);
-
     // Convert user's registration time to their local time zone
-    let previousClaimStartDate = moment.tz(user.createdAt, user.timeZone);
+    let previousClaimStartDate = moment.tz(
+      currentTime || user.createdAt,
+      user.timeZone,
+    );
 
     const userRewards = rewards.map((reward) => {
       let claimStartDate: Date, claimEndDate: Date;
@@ -93,7 +108,8 @@ export class AuthService {
         rewardId: reward.id,
         claimStartDate: claimStartDate,
         claimEndDate: claimEndDate,
-        state: reward.dayNumber === 1 ? 1 : 0, // First day active, rest locked
+        state: reward.dayNumber === 1 ? State.Active : State.Locked, // First day active, rest locked,
+        isCurrentWeek: true,
       };
     });
 

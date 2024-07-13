@@ -13,11 +13,11 @@ export class UserRewardsRepository {
     await this.prisma.userReward.createMany({ data: createUserRewardsDto });
   }
 
-  getAllUserRewards(
+  getUserWeeklyRewards(
     userId: number,
   ): Prisma.PrismaPromise<(UserReward & { reward: Reward })[]> {
     return this.prisma.userReward.findMany({
-      where: { userId },
+      where: { userId, isCurrentWeek: true },
       include: { reward: true },
       orderBy: { rewardId: 'asc' },
     });
@@ -51,5 +51,23 @@ export class UserRewardsRepository {
       include: { reward: true },
       orderBy: { claimedAt: 'asc' },
     });
+  }
+
+  async resetCurrentWeekRewards(userId: number): Promise<void> {
+    await this.prisma.userReward.updateMany({
+      where: { userId, isCurrentWeek: true },
+      data: { isCurrentWeek: false },
+    });
+  }
+
+  async getCurrentRewardEndTime(
+    userId: number,
+  ): Promise<{ claimEndDate: Date }> {
+    const claimEndDate = this.prisma.userReward.findFirst({
+      where: { userId, state: 1 },
+      select: { claimEndDate: true },
+    });
+
+    return claimEndDate;
   }
 }

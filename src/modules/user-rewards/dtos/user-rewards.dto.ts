@@ -21,4 +21,7 @@ export class UserRewardsDto {
 
   @Expose()
   claimedAt: string;
+
+  @Expose()
+  isCurrentWeek: boolean;
 }
