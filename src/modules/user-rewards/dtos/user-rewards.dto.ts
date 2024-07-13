@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 
-export class UserRewards {
+export class UserRewardsDto {
   @Expose()
   dayNumber: number;
 
