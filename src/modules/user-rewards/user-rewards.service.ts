@@ -14,23 +14,28 @@ export class UserRewardsService {
     private readonly rewardsRepository: RewardsRepository,
   ) {}
 
-  async getUserWeeklyRewards(userId: number): Promise<UserRewardsDto[]> {
-    const userRewards =
-      await this.userRewardsRepository.getUserWeeklyRewards(userId);
+  async getUserWeeklyRewards(user: User): Promise<UserRewardsDto[]> {
+    const userRewards = await this.userRewardsRepository.getUserWeeklyRewards(
+      user.id,
+    );
 
     return userRewards.map((userReward) => ({
       dayNumber: userReward.reward.dayNumber,
       coin: userReward.reward.coin,
       description: userReward.reward.description,
-      claimStartDate: moment(userReward.claimStartDate).format(
-        'YYYY-MM-DD HH:mm:ss',
-      ),
+      claimStartDate: moment
+        .tz(userReward.claimStartDate, user.timeZone)
+        .format('YYYY-MM-DD HH:mm:ss'),
       claimEndDate: userReward.claimEndDate
-        ? moment(userReward.claimEndDate).format('YYYY-MM-DD HH:mm:ss')
+        ? moment
+            .tz(userReward.claimEndDate, user.timeZone)
+            .format('YYYY-MM-DD HH:mm:ss')
         : null,
       state: userReward.state,
       claimedAt: userReward.claimedAt
-        ? moment(userReward.claimedAt).format('YYYY-MM-DD HH:mm:ss')
+        ? moment
+            .tz(userReward.claimedAt, user.timeZone)
+            .format('YYYY-MM-DD HH:mm:ss')
         : null,
       isCurrentWeek: userReward.isCurrentWeek,
     }));
@@ -121,23 +126,28 @@ export class UserRewardsService {
     };
   }
 
-  async getUserRewardsHistory(userId: number): Promise<UserRewardsDto[]> {
-    const userRewards =
-      await this.userRewardsRepository.getUserRewardsHistory(userId);
+  async getUserRewardsHistory(user: User): Promise<UserRewardsDto[]> {
+    const userRewards = await this.userRewardsRepository.getUserRewardsHistory(
+      user.id,
+    );
 
     return userRewards.map((userReward) => ({
       dayNumber: userReward.reward.dayNumber,
       coin: userReward.reward.coin,
       description: userReward.reward.description,
-      claimStartDate: moment(userReward.claimStartDate).format(
-        'YYYY-MM-DD HH:mm:ss',
-      ),
+      claimStartDate: moment
+        .tz(userReward.claimStartDate, user.timeZone)
+        .format('YYYY-MM-DD HH:mm:ss'),
       claimEndDate: userReward.claimEndDate
-        ? moment(userReward.claimEndDate).format('YYYY-MM-DD HH:mm:ss')
+        ? moment
+            .tz(userReward.claimEndDate, user.timeZone)
+            .format('YYYY-MM-DD HH:mm:ss')
         : null,
       state: userReward.state,
       claimedAt: userReward.claimedAt
-        ? moment(userReward.claimedAt).format('YYYY-MM-DD HH:mm:ss')
+        ? moment
+            .tz(userReward.claimedAt, user.timeZone)
+            .format('YYYY-MM-DD HH:mm:ss')
         : null,
       isCurrentWeek: userReward.isCurrentWeek,
     }));
@@ -199,22 +209,16 @@ export class UserRewardsService {
           claimedAt: firstRewardClaimedAt,
         });
       } else {
-        const dayOffset = reward.reward.dayNumber - 1;
-        const claimStartDate = previousClaimStartDate
-          .add(dayOffset, 'days')
-          .startOf('day')
-          .toDate();
-        const claimEndDate = moment
-          .tz(claimStartDate, user.timeZone)
-          .endOf('day')
-          .toDate();
+        previousClaimStartDate = previousClaimStartDate
+          .add(1, 'days')
+          .startOf('day');
+        const claimStartDate = previousClaimStartDate.toDate();
+        const claimEndDate = previousClaimStartDate.endOf('day').toDate();
 
         await this.userRewardsRepository.updateUserReward(reward.id, {
           claimStartDate,
           claimEndDate,
         });
-
-        previousClaimStartDate = moment.tz(claimStartDate, user.timeZone);
       }
     }
   }

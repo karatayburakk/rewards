@@ -1,17 +1,36 @@
 version: '3.8'
-
 services:
-  db:
-    image: postgres:latest
-    container_name: postgres-rewards
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: rewards-db
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - '5432:5432'
+      - 3000:3000
+    volumes:
+      - ./src:/app/src
+    env_file: .env
+    environment:
+      - START_MODE=${START_MODE:-dev} # Default to 'dev' if not set
+    command: ['/app/entrypoint.sh']
+    depends_on:
+      data-source:
+        condition: service_healthy
+  data-source:
+    image: 'postgres:latest'
+    container_name: data-source
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'postgres'
+      POSTGRES_DB: 'rewards-db'
+    ports:
+      - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 3s
+      timeout: 3s
+      retries: 5
 volumes:
   postgres_data:
