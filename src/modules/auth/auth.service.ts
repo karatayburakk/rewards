@@ -77,7 +77,6 @@ export class AuthService {
   ): Promise<void> {
     const rewards = await this.rewardsRepository.getAllRewards();
 
-    // Convert user's registration time to their local time zone
     let previousClaimStartDate = moment.tz(
       currentTime || user.createdAt,
       user.timeZone,
@@ -100,7 +99,6 @@ export class AuthService {
           .toDate();
       }
 
-      // Update previousClaimStartDate for the next iteration
       previousClaimStartDate = moment.tz(claimStartDate, user.timeZone);
 
       return {
@@ -108,7 +106,7 @@ export class AuthService {
         rewardId: reward.id,
         claimStartDate: claimStartDate,
         claimEndDate: claimEndDate,
-        state: reward.dayNumber === 1 ? State.Active : State.Locked, // First day active, rest locked,
+        state: reward.dayNumber === 1 ? State.Active : State.Locked,
         isCurrentWeek: true,
       };
     });
