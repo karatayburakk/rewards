@@ -8,8 +8,8 @@ async function main() {
     { dayNumber: 3, coin: 30, description: 'Day 3 Reward' },
     { dayNumber: 4, coin: 40, description: 'Day 4 Reward' },
     { dayNumber: 5, coin: 50, description: 'Day 5 Reward' },
-    { dayNumber: 6, coin: 60, description: 'Day 6 Reward' },
-    { dayNumber: 7, coin: 70, description: 'Day 7 Reward' },
+    { dayNumber: 6, coin: 100, description: 'Day 6 Reward' },
+    { dayNumber: 7, coin: 200, description: 'Day 7 Reward' },
   ];
 
   for (const reward of rewards) {

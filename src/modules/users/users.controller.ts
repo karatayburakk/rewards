@@ -1,15 +1,17 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { User } from '@prisma/client';
-import { UsersService } from './users.service';
 import { JwtGuard } from '../../common/guards/jwt.guard';
+import { CurrentUser } from '../../common/decoratos/get-user.decorator';
+import { UserInfoDto } from './dtos/user-info.dto';
+import { UsersService } from './users.service';
 
 @UseGuards(JwtGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
-  getAllUsers(): Promise<User[]> {
-    return this.usersService.getAllUsers();
+  @Get('info')
+  getUserInfo(@CurrentUser() user: User): UserInfoDto {
+    return this.usersService.getUserInfo(user);
   }
 }
