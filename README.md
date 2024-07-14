@@ -47,6 +47,7 @@ Each reward can be collected once per day, and the dates are adjusted based on t
 
 - Docker installed (the application and database are fully containerized and can be used with Docker)
 - For local usage: PostgreSQL (or your choice of database) set up, Node.js and yarn installed
+- For the application running as expected, database must be seeded, please follow steps accordingly.
 
 ### Steps
 
@@ -79,7 +80,23 @@ docker-compose up
 
 - This command starts a PostgresSQL database container (without migration and seed), then starts the application.
 
-5. For Local Development, Run following command:
+5. For Local Development, Run following commands:
+
+- Database should be up on and running
+
+- For Database Migration:
+
+```sh
+yarn migrate
+```
+
+- For Database seed:
+
+```sh
+yarn seed
+```
+
+- For Application running in development mode:
 
 ```sh
 yarn start:dev
