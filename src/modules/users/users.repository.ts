@@ -7,10 +7,6 @@ import { CreateUserDto } from './dtos/create-user.dto';
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  getAllUsers(): Promise<User[]> {
-    return this.prisma.user.findMany();
-  }
-
   createUser(createUserDto: CreateUserDto): Promise<User> {
     return this.prisma.user.create({ data: createUserDto });
   }
@@ -21,5 +17,12 @@ export class UsersRepository {
 
   getUserByEmail(email: string): Promise<User> {
     return this.prisma.user.findUniqueOrThrow({ where: { email } });
+  }
+
+  async incrementUserTotalCoins(id: number, coin: number): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { totalCoins: { increment: coin } },
+    });
   }
 }

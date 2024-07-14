@@ -6,12 +6,14 @@ import { CollectRewardDto } from './dtos/collect-reward.dto';
 import { RewardsRepository } from '../rewards/rewards.repository';
 import { State } from './dtos/create-user-rewards-dto';
 import { User } from '@prisma/client';
+import { UsersRepository } from '../users/users.repository';
 
 @Injectable()
 export class UserRewardsService {
   constructor(
     private readonly userRewardsRepository: UserRewardsRepository,
     private readonly rewardsRepository: RewardsRepository,
+    private readonly usersRepository: UsersRepository,
   ) {}
 
   async getUserWeeklyRewards(user: User): Promise<UserRewardsDto[]> {
@@ -105,6 +107,11 @@ export class UserRewardsService {
         claimedAt: currentUtcTime,
       });
     }
+
+    await this.usersRepository.incrementUserTotalCoins(
+      user.id,
+      requestedReward.reward.coin,
+    );
 
     const nextDayIndex = (dayIndex % 7) + 1;
     const nextReward = await this.userRewardsRepository.getUserRewardByDayIndex(

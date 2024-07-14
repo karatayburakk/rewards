@@ -22,6 +22,7 @@ model User {
   email String @unique
   password String
   timeZone String
+  totalCoins Int @default(0)
 
   userRewards UserReward[]
 }
