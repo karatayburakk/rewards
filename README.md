@@ -54,7 +54,7 @@ Each reward can be collected once per day, and the dates are adjusted based on t
 1. Set up environment variables. Create a `.env` file in the root directory and add the following (There is a template file .env.template):
 
 - DATABASE_URL="postgresql://<username>:<password>@<host>:<port>/<database>?schema=public"
-- JWT_SECRET="your_jwt_secret"
+- SECRET_KEY="your_jwt_secret"
 
 2. Production Environment With Migrations And Seeds, Run the following command:
 
