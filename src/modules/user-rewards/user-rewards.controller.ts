@@ -28,4 +28,11 @@ export class UserRewardsController {
   getUserRewardsHistory(@CurrentUser() user: User): Promise<UserRewardsDto[]> {
     return this.userRewardsService.getUserRewardsHistory(user);
   }
+
+  @Get('total-coins')
+  getUsertotalCoins(
+    @CurrentUser('id') userId: number,
+  ): Promise<{ totalCoins: number }> {
+    return this.userRewardsService.getUserTotalCoins(userId);
+  }
 }

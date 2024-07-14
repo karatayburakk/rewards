@@ -160,6 +160,10 @@ export class UserRewardsService {
     }));
   }
 
+  getUserTotalCoins(userId: number): Promise<{ totalCoins: number }> {
+    return this.usersRepository.getUserTotalCoins(userId);
+  }
+
   private async createNewCycleRewards(user: User, startDate: Date) {
     await this.userRewardsRepository.resetCurrentWeekRewards(user.id);
 

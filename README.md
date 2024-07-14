@@ -29,6 +29,7 @@ Each reward can be collected once per day, and the dates are adjusted based on t
 - Automatic cycle reset after a missed reward
 - Display all rewards that user claimed based on the user's time zone -> {{url}}/user-rewards/history GET
 - Track total coins collected by each user
+- Display total coin that user has -> {{url}}/user-rewards/total-coins
 - System healtch can be checked -> {{url}}/health GET
 
 ## Technologies
