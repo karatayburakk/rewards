@@ -25,4 +25,11 @@ export class UsersRepository {
       data: { totalCoins: { increment: coin } },
     });
   }
+
+  getUserTotalCoins(id: number): Promise<{ totalCoins: number }> {
+    return this.prisma.user.findUniqueOrThrow({
+      where: { id },
+      select: { totalCoins: true },
+    });
+  }
 }

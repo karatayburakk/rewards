@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "a6028f2a-1bcd-420d-80f0-b769619f927c",
+		"_postman_id": "464e3af0-9122-4e57-9224-628f6cc450e6",
 		"name": "rewards",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "13996544"
@@ -213,6 +213,34 @@
 							"path": [
 								"user-rewards",
 								"history"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Total Coins",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/user-rewards/total-coins",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"user-rewards",
+								"total-coins"
 							]
 						}
 					},
