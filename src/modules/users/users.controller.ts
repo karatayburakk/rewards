@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { JwtGuard } from '../../common/guards/jwt.guard';
-import { CurrentUser } from '../../common/decoratos/get-user.decorator';
+import { CurrentUser } from '../../common/decorators/get-user.decorator';
 import { UserInfoDto } from './dtos/user-info.dto';
 import { UsersService } from './users.service';
 

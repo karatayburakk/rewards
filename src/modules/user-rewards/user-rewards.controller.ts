@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { UserRewardsService } from './user-rewards.service';
-import { CurrentUser } from '../../common/decoratos/get-user.decorator';
+import { CurrentUser } from '../../common/decorators/get-user.decorator';
 import { JwtGuard } from '../../common/guards/jwt.guard';
 import { UserRewardsDto } from './dtos/user-rewards.dto';
 import { CollectRewardDto } from './dtos/collect-reward.dto';
